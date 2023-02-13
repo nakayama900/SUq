@@ -4,6 +4,7 @@
 
 var
   cheerio = require('cheerio'),
+  axious = require('axious'),
   request = require('request'),
   microdata = require('microdata-node'),
   _ = require('lodash');
@@ -29,8 +30,9 @@ var populate = {
 };
 
 
-module.exports = function (url, callback, opts) {
-  request(_.extend({"url": url}, opts || {}), function (err, res, body) {
+/*
+module.exports = function(url, callback, opts) {
+  request(_.extend({ "url": url }, opts || {}), function(err, res, body) {
     if (err) {
       callback(err, null);
     } else if (body && res) {
@@ -40,14 +42,27 @@ module.exports = function (url, callback, opts) {
     }
   });
 };
+*/
+module.exports = function(url, callback, opts) {
+  try {
+    const res = got(_.extend({ "url": url }, opts || {}))
+    if (res) {
+      module.exports.parse(body, callback);
+    } else {
+      callback('No Response');
+    }
+  } catch (error) {
+    callback(err, null);
+  }
+};
 
 
-module.exports.parse = function (body, callback) {
-  cleanMicrodata(microdata.toJson(body), function (err, cleanData) {
+module.exports.parse = function(body, callback) {
+  cleanMicrodata(microdata.toJson(body), function(err, cleanData) {
     if (!err && cleanData) {
       populate.microdata = cleanData;
       var $ = cheerio.load(body);
-      parseMeta($, function (err, meta) {
+      parseMeta($, function(err, meta) {
         populate.meta = meta;
         parseTags($, function(err, tags) {
           populate.tags = tags;
@@ -60,7 +75,7 @@ module.exports.parse = function (body, callback) {
                 parseOembed($, function(err, oembed) {
                   populate.oembed = oembed;
                   callback(null, populate, body);
-                });                
+                });
               });
             });
           })
